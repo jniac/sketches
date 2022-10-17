@@ -1,4 +1,4 @@
-import { THREE } from '../three.js'
+import { OrbitControls, THREE } from '../three.js'
 import { getDefaultLight } from './default-light.js'
 
 Object.assign(window, { THREE })
@@ -10,9 +10,12 @@ export const renderer = new THREE.WebGLRenderer({ antialias: true })
 scene.background = new THREE.Color('#ccc')
 scene.add(getDefaultLight())
 renderer.setSize(window.innerWidth, window.innerHeight)
+camera.position.y = 1.5
 camera.position.z = 5
 
 document.body.appendChild(renderer.domElement)
+
+export const controls = new OrbitControls(camera, renderer.domElement)
 
 const resize = () => {
   camera.aspect = window.innerWidth / window.innerHeight

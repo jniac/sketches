@@ -8,7 +8,8 @@ export const getDefaultLight = () => {
   group.add(ambient)
 
   const sun = new THREE.DirectionalLight('#fff', .5)
-  sun.position.set(4, 1, 7)
+  sun.position.set(4, 7, 4)
+  sun.castShadow = true
   group.add(sun)
 
   return group
