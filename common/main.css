@@ -1,6 +1,11 @@
+@import url(https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&display=swap);
+@import url(body-index.css);
+
 @import url(reset.css);
 @import url(layout.css);
+@import url(common.css);
 
 body {
   min-height: 100vh;
+  font-family: 'Fira Code', monospace;
 }

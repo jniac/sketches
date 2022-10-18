@@ -1,12 +1,214 @@
+
+.fill {
+  width: 100%;
+  height: 100%;
+}
+
+.vh-100 {
+  height: 100vh;
+}
+
+/* remove first and last margins over a text (that should be wrapped by any element) */
+.fit-line-height > *:first-child {
+  margin-top: -.25em;
+}
+.fit-line-height > *:last-child {
+  margin-bottom: -.25em;
+}
+
+.padding-1em {
+  padding: 1em;
+}
+
+.padding-2em {
+  padding: 2em;
+}
+
+.padding-1 {
+  padding: 1px;
+}
+.padding-2 {
+  padding: 2px;
+}
+.padding-4 {
+  padding: 4px;
+}
+.padding-6 {
+  padding: 6px;
+}
+.padding-8 {
+  padding: 8px;
+}
+.padding-10 {
+  padding: 10px;
+}
+.padding-12 {
+  padding: 12px;
+}
+.padding-14 {
+  padding: 14px;
+}
+.padding-16 {
+  padding: 16px;
+}
+.padding-32 {
+  padding: 32px;
+}
+.padding-64 {
+  padding: 64px;
+}
+.padding-96 {
+  padding: 96px;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.pre {
+  white-space: pre;
+}
+
+.overflow-hidden {
+  overflow: hidden;
+}
+
 .flex {
   display: flex;
+  --gutter: 0;
 }
 
-.flex:not(.row),
-.flex .column {
+.flex.row {
+  flex-direction: row;
+}
+/* https://developer.mozilla.org/en-US/docs/Web/CSS/Attribute_selectors */
+.flex[class*="gutter"].row > * + * {
+  margin-left: var(--gutter);
+}
+
+.flex.column {
   flex-direction: column;
 }
+.flex.column[class*="gutter"] > * + * {
+  margin-top: var(--gutter);
+}
 
-.flex .row {
-  flex-direction: row;
+.flex.center {
+  align-items: center;
+  justify-content: center;
+}
+
+.flex.space-between {
+  justify-content: space-between;
+}
+
+.flex.align-center {
+  align-items: center;
+}
+
+.flex.align-stretch {
+  align-items: stretch;
+}
+
+.flex.gutter-4 > * {
+  --gutter: 4px;
+}
+.flex.gutter-6 > * {
+  --gutter: 6px;
+}
+.flex.gutter-8 > * {
+  --gutter: 8px;
+}
+.flex.gutter-10 > * {
+  --gutter: 10px;
+}
+.flex.gutter-12 > * {
+  --gutter: 12px;
+}
+.flex.gutter-14 > * {
+  --gutter: 14px;
+}
+.flex.gutter-16 > * {
+  --gutter: 16px;
+}
+.flex.gutter-32 > * {
+  --gutter: 32px;
+}
+.flex.gutter-48 > * {
+  --gutter: 48px;
+}
+.flex.gutter-64 > * {
+  --gutter: 64px;
+}
+
+.flex > .stretch {
+  align-self: stretch;
+}
+
+.flex > .expand {
+  flex: 1;
+  align-self: stretch;
+}
+
+.flex.expand-content > * {
+  flex: 1;
+}
+
+
+
+.flex > .space-4 {
+  flex: 0 0 4px;
+  align-self: stretch;
+}
+
+.flex > .space-8 {
+  flex: 0 0 8px;
+  align-self: stretch;
+}
+
+.flex > .space-16 {
+  flex: 0 0 16px;
+  align-self: stretch;
+}
+
+.flex > .space-32 {
+  flex: 0 0 32px;
+  align-self: stretch;
+}
+
+.flex > .space-48 {
+  flex: 0 0 48px;
+  align-self: stretch;
+}
+
+.flex > .space-64 {
+  flex: 0 0 64px;
+  align-self: stretch;
+}
+
+.flex > .space-96 {
+  flex: 0 0 96px;
+  align-self: stretch;
+}
+
+
+
+.flex > .space-1em {
+  flex: 0 0 1em;
+  align-self: stretch;
+}
+
+.flex > .space-2em {
+  flex: 0 0 2em;
+  align-self: stretch;
+}
+
+.flex > .space-3em {
+  flex: 0 0 3em;
+  align-self: stretch;
+}
+
+.flex > .space-4em {
+  flex: 0 0 4em;
+  align-self: stretch;
 }

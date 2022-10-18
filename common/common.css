@@ -1,0 +1,15 @@
+.overlay.info {
+  --margin: 0;
+  position: fixed;
+  z-index: 1;
+  background-color: #fffc;
+  border-radius: 4px;
+}
+
+.overlay.info.bottom {
+  bottom: var(--margin);
+}
+
+.overlay.info.right {
+  right: var(--margin);
+}
