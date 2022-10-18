@@ -94,12 +94,12 @@ const createInstancedFoliage = ({
   instancedMesh.castShadow = true
   instancedMesh.onBeforeRender = () => {
     if (shader) {
-      const { uniforms } = shader
-      uniforms.uTime.value += 1 / 60
-      uniforms.uWindSize.value = mnui.range('wind/size', uniforms.uWindSize.value, [0, 3]).value
-      uniforms.uWindAmplitude.value = mnui.range('wind/amplitude', uniforms.uWindAmplitude.value, [0, .2]).value
-      uniforms.uWindOctaveSizeRatio.value = mnui.range('wind/octaves size ratio', uniforms.uWindOctaveSizeRatio.value, [0, 1]).value
-      uniforms.uWindOctaveAmplitudeDecay.value = mnui.range('wind/octaves amp decay', uniforms.uWindOctaveAmplitudeDecay.value, [0, 1]).value
+      const { uTime, uWindSize, uWindAmplitude, uWindOctaveSizeRatio, uWindOctaveAmplitudeDecay } = shader.uniforms
+      uTime.value += 1 / 60
+      uWindSize.value = mnui.range('wind/size', uWindSize.value, [0, 3]).value
+      uWindAmplitude.value = mnui.range('wind/amplitude', uWindAmplitude.value, [0, .2]).value
+      uWindOctaveSizeRatio.value = mnui.range('wind/octaves size ratio', uWindOctaveSizeRatio.value, [0, 1]).value
+      uWindOctaveAmplitudeDecay.value = mnui.range('wind/octaves amp decay', uWindOctaveAmplitudeDecay.value, [0, 1]).value
     }
   }
 
