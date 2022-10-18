@@ -41,6 +41,8 @@ const createInstancedFoliage = ({
     shader = _shader
     shader.uniforms.uTime = { value: 0 }
     shader.uniforms.uWindSize = { value: 1 }
+    shader.uniforms.uWindFrequence = { value: 1 }
+    shader.uniforms.uWindBending = { value: 2 }
     shader.uniforms.uWindDirection = { value: new THREE.Vector3(1, 0, 1) }
     shader.uniforms.uWindNormal = { value: new THREE.Vector3(1, 0, -1) }
     shader.uniforms.uWindAmplitude = { value: .02 }
@@ -49,11 +51,13 @@ const createInstancedFoliage = ({
     shader.defines.WIND_OCTAVES = 4
     shader.vertexShader = injectBefore(shader.vertexShader, '#include <common>', /* glsl */`
       uniform float uTime;
-      uniform float uWindOctaveSizeRatio;
-      uniform float uWindOctaveAmplitudeDecay;
       uniform float uWindSize;
+      uniform float uWindFrequence;
+      uniform float uWindBending;
       uniform vec3 uWindDirection;
       uniform vec3 uWindNormal;
+      uniform float uWindOctaveSizeRatio;
+      uniform float uWindOctaveAmplitudeDecay;
       uniform float uWindAmplitude;
     `)
     // https://github.com/mrdoob/three.js/blob/master/src/renderers/shaders/ShaderChunk/project_vertex.glsl.js
@@ -68,15 +72,18 @@ const createInstancedFoliage = ({
 
       vec3 offset = vec3(0);
       float period = uWindSize, amplitude = uWindAmplitude;
+      float time = uTime * uWindFrequence;
+      // There is pow here, it's better to avoid it in production, and use the "square" alternative.
+      float intensity = pow(vUv.y, uWindBending);
+      // float intensity = vUv.y * vUv.y;
       for (int i = 0; i < WIND_OCTAVES; i++) {
-        float intensity = vUv.y * vUv.y;
-        float x1 = intensity * sin(uTime + mvPosition.x / period + mvPosition.z / period) * amplitude;
-        float x2 = intensity * sin(uTime + mvPosition.x / period / 2.0 + mvPosition.z / period / 2.0) * amplitude;
+        float x1 = intensity * sin(time + mvPosition.x / period + mvPosition.z / period) * amplitude;
+        float x2 = intensity * sin(time + mvPosition.x / period / 2.0 + mvPosition.z / period / 2.0) * amplitude;
         offset += 
           uWindDirection * x1 +
           uWindNormal * intensity * x2;
-        // Vertical effect, hm... not very ouf (sic)
-        offset.y += -0.5 * abs(x1);
+        // Pythagore is here: 
+        offset.y *= sqrt(1.0 - x1 * x1);
         period *= uWindOctaveSizeRatio;
         amplitude *= uWindOctaveAmplitudeDecay;
       }
@@ -89,19 +96,20 @@ const createInstancedFoliage = ({
   }
 
   const instancedMesh = new THREE.InstancedMesh(geometry, material, count)
-  parent?.add(instancedMesh)
-
   instancedMesh.castShadow = true
   instancedMesh.onBeforeRender = () => {
     if (shader) {
-      const { uTime, uWindSize, uWindAmplitude, uWindOctaveSizeRatio, uWindOctaveAmplitudeDecay } = shader.uniforms
+      const { uTime, uWindSize, uWindFrequence, uWindBending, uWindAmplitude, uWindOctaveSizeRatio, uWindOctaveAmplitudeDecay } = shader.uniforms
       uTime.value += 1 / 60
-      uWindSize.value = mnui.range('wind/size', uWindSize.value, [0, 3]).value
+      uWindSize.value = mnui.range('wind/size', uWindSize.value, [0, 20]).value
+      uWindFrequence.value = mnui.range('wind/frequence', uWindFrequence.value, [0, 20]).value
+      uWindBending.value = mnui.range('wind/bending', uWindBending.value, [.5, 3]).value
       uWindAmplitude.value = mnui.range('wind/amplitude', uWindAmplitude.value, [0, .2]).value
       uWindOctaveSizeRatio.value = mnui.range('wind/octaves size ratio', uWindOctaveSizeRatio.value, [0, 1]).value
       uWindOctaveAmplitudeDecay.value = mnui.range('wind/octaves amp decay', uWindOctaveAmplitudeDecay.value, [0, 1]).value
     }
   }
+  parent?.add(instancedMesh)
 
   const matrix = new THREE.Matrix4()
   const position = new THREE.Vector3()
