@@ -1,12 +1,11 @@
 import { mergeBufferGeometries, THREE } from './three.js'
-import { scene } from './stage/stage.js'
-import { loadTexture, injectBefore, createGrid, createGround } from './utils/index.js'
-import { mnui } from 'https://unpkg.com/@jniac/mnui@1.0.7/dist/mnui.js'
+import { scene, loadTexture, injectBefore, createGrid, createGround } from './setup/index.js'
+import { mnui } from '@jniac/mnui'
 
 const createInstancedFoliage = ({
   parent = scene,
   count = 10,
-  setTransform,
+  initMatrix,
 } = {}) => {
 
   const geometry = mergeBufferGeometries([
@@ -110,6 +109,7 @@ const createInstancedFoliage = ({
     }
   }
   parent?.add(instancedMesh)
+  instancedMesh.customDepthMaterial = new THREE.MeshDepthMaterial()
 
   const matrix = new THREE.Matrix4()
   const position = new THREE.Vector3()
@@ -120,7 +120,7 @@ const createInstancedFoliage = ({
     position.set(0, 0, 0)
     rotation.set(0, 0, 0)
     scale.set(1, 1, 1)
-    setTransform(position, rotation, scale, index)
+    initMatrix(position, rotation, scale, index)
     matrix.compose(position, quaternion.setFromEuler(rotation), scale)
     instancedMesh.setMatrixAt(index, matrix)
   }
@@ -132,12 +132,12 @@ createGrid()
 createGround()
 
 const { seededRandom, lerp } = THREE.MathUtils
-seededRandom(2245678)
+seededRandom(45623)
 createInstancedFoliage({
   count: 20,
-  setTransform: (position, rotation, scale) => {
+  initMatrix: (position, rotation, scale) => {
     position.x = lerp(-4, 4, seededRandom())
-    position.z = lerp(-4, 1, seededRandom())
+    position.z = lerp(-4, 2, seededRandom())
     rotation.y = Math.PI * 2 * seededRandom()
     scale.setScalar(lerp(1, 1.2, seededRandom()))
   },
