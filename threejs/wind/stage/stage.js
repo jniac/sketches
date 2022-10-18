@@ -9,8 +9,11 @@ export const renderer = new THREE.WebGLRenderer({ antialias: true })
 
 scene.background = new THREE.Color('#ccc')
 scene.add(getDefaultLight())
+
 renderer.setSize(window.innerWidth, window.innerHeight)
-camera.position.y = 1.5
+renderer.shadowMap.enabled = true
+
+camera.position.y = 2.5
 camera.position.z = 5
 
 document.body.appendChild(renderer.domElement)
