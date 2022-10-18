@@ -1,8 +1,6 @@
 import { mergeBufferGeometries, THREE } from './three.js'
 import { scene } from './stage/stage.js'
-import { loadTexture } from './utils.js'
-import { injectBefore } from './utils/shader.js'
-import { createGrid, createGround } from './create.js'
+import { loadTexture, injectBefore, createGrid, createGround } from './utils/index.js'
 import { mnui } from 'https://unpkg.com/@jniac/mnui@1.0.7/dist/mnui.js'
 
 const createInstancedFoliage = ({

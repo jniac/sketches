@@ -1,5 +1,5 @@
-import { THREE } from './three.js'
-import { scene } from './stage/stage.js'
+import { THREE } from '../three.js'
+import { scene } from '../stage/stage.js'
 
 export const createGrid = () => {
   const gridHelper = new THREE.GridHelper(10, 10)
