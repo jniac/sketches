@@ -24,7 +24,6 @@ export const renderer = new THREE.WebGLRenderer({ antialias: true })
 scene.background = new THREE.Color('#ccc')
 scene.add(getDefaultLight())
 
-renderer.setSize(window.innerWidth, window.innerHeight)
 renderer.shadowMap.enabled = true
 
 camera.position.y = 2.5
@@ -37,6 +36,7 @@ export const controls = new OrbitControls(camera, renderer.domElement)
 const resize = () => {
   camera.aspect = window.innerWidth / window.innerHeight
   camera.updateProjectionMatrix()
+  renderer.setSize(window.innerWidth, window.innerHeight)
 }
 
 const MAX_DELTA_TIME = 1 / 20
