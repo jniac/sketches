@@ -112,6 +112,7 @@ const createInstancedFoliage = ({
 
   // NOTE: Dunno what to do to have animated shadows here.
   // instancedMesh.customDepthMaterial = new THREE.MeshDepthMaterial()
+  // instancedMesh.customDepthMaterial = new THREE.MeshBasicMaterial({ color: '#000' })
 
   const matrix = new THREE.Matrix4()
   const position = new THREE.Vector3()
