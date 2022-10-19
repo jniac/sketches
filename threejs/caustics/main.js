@@ -30,14 +30,16 @@ export const createCausticsMaterial = parameters => {
 
     shader.defines.USE_UV = ''
     shader.defines.CAUSTICS_SQUARE = ''
+    // shader.defines.CAUSTICS_USE_CAMERA_ORIENTATION = ''
 
     shader.uniforms.uTime = { value: 0 }
-    shader.uniforms.uCausticsScale = { value: new THREE.Vector3(1.15, 0.95, 0.5) }
+    shader.uniforms.uCausticsScale = { value: new THREE.Vector3(1.15, 0.95, 1) }
     shader.uniforms.uCausticsDirection = { value: new THREE.Vector3(0, 1, 0) }
     shader.uniforms.uCausticsNormalAttenuation = { value: .5 }
     shader.uniforms.uCausticsRGBShift = { value: new THREE.Vector4(1, 1, 1, 1) }
     shader.uniforms.uCausticsIntensity = { value: 1.3 }
     shader.uniforms.uCausticsMap = { value: causticsMap }
+    shader.uniforms.uCausticsCameraOrientation = { value: new THREE.Matrix3() }
 
     shader.vertexShader = shaderTools.injectAfter(
       shader.vertexShader,
@@ -63,13 +65,22 @@ export const createCausticsMaterial = parameters => {
         uniform vec3 uCausticsDirection;
         uniform vec4 uCausticsRGBShift;
         uniform sampler2D uCausticsMap;
+        uniform mat3 uCausticsCameraOrientation;
         vec4 causticsTex(vec2 uv) {
           return texture2D(uCausticsMap, uv);
         }
         vec3 caustics(vec3 normal) {
+
+          #ifdef CAUSTICS_USE_CAMERA_ORIENTATION
+            vec2 p = (uCausticsCameraOrientation * cs_vWorldPosition).xy;
+          #else
+            vec2 p = cs_vWorldPosition.xz;
+          #endif
+          
           vec3 scale = uCausticsScale;
-          vec2 uv1 = (cs_vWorldPosition.xz * scale.z + uTime * 0.02) * scale.x;
-          vec2 uv2 = (cs_vWorldPosition.xz * scale.z - uTime * 0.01) * scale.y;
+          p *= 0.3 * scale.z;
+          vec2 uv1 = (p + uTime * 0.02) * scale.x;
+          vec2 uv2 = (p - uTime * 0.01) * scale.y;
           float s = 0.002 * scale.z;
           vec4 shift = uCausticsRGBShift;
           vec2 shiftR = shift.w * shift.x * vec2(-s, s);
@@ -80,14 +91,19 @@ export const createCausticsMaterial = parameters => {
           float g = min(causticsTex(uv1 + shiftG).g, causticsTex(uv2 + shiftG).g);
           float b = min(causticsTex(uv1 + shiftB).b, causticsTex(uv2 + shiftB).b);
           
-          vec3 up = (viewMatrix * vec4(uCausticsDirection, 0.0)).xyz;
+          #ifdef CAUSTICS_USE_CAMERA_ORIENTATION
+            vec3 up = vec3(0.0, 0.0, 1.0);
+          #else
+            vec3 up = (viewMatrix * vec4(uCausticsDirection, 0.0)).xyz;
+          #endif
+
           float incidence = clamp(dot(normal, up), 0.0, 1.0);
           vec3 light = vec3(r, g, b) * uCausticsIntensity * mix(1.0 - uCausticsNormalAttenuation, 1.0, incidence);
 
           #ifdef CAUSTICS_SQUARE
-          return light * light * 4.0;
+            return light * light * 4.0;
           #else
-          return light;
+            return light;
           #endif
         }
       `
@@ -100,7 +116,7 @@ export const createCausticsMaterial = parameters => {
       `
     )
 
-    onBeforeRender(() => {
+    onBeforeRender(({ camera }) => {
       if (shader) {
         const { 
           uTime,
@@ -108,10 +124,22 @@ export const createCausticsMaterial = parameters => {
           uCausticsIntensity,
           uCausticsRGBShift,
           uCausticsNormalAttenuation,
+          uCausticsCameraOrientation,
         } = shader.uniforms
         
         uTime.value += 1 / 60
-  
+        uCausticsCameraOrientation.value.set(
+          camera.matrixWorld.elements[0],
+          camera.matrixWorld.elements[1],
+          camera.matrixWorld.elements[2],
+          camera.matrixWorld.elements[4],
+          camera.matrixWorld.elements[5],
+          camera.matrixWorld.elements[6],
+          camera.matrixWorld.elements[8],
+          camera.matrixWorld.elements[9],
+          camera.matrixWorld.elements[10],
+        )
+
         mnui.group('caustics', () => {
           uCausticsScale.value.copy(mnui.vector('scale', uCausticsScale.value).value)
           uCausticsScale.value.z = mnui.range('scale.z', uCausticsScale.value.z, [0, 4]).value
@@ -129,6 +157,15 @@ export const createCausticsMaterial = parameters => {
           shader.defines.CAUSTICS_SQUARE = ''
         } else {
           delete shader.defines.CAUSTICS_SQUARE
+        }
+        material.needsUpdate = true
+      })
+      
+      mnui.toggle('USE_CAMERA_ORIENTATION', 'CAUSTICS_USE_CAMERA_ORIENTATION' in shader.defines).onUserChange(value => {        
+        if (value) {
+          shader.defines.CAUSTICS_USE_CAMERA_ORIENTATION = ''
+        } else {
+          delete shader.defines.CAUSTICS_USE_CAMERA_ORIENTATION
         }
         material.needsUpdate = true
       })
