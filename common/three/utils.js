@@ -2,6 +2,8 @@ import * as THREE from 'three'
 import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader'
 import { HDRCubeTextureLoader } from 'three/examples/jsm/loaders/HDRCubeTextureLoader'
 
+// Object.assign(window, { THREE })
+
 const loader = new THREE.TextureLoader()
 const exrLoader = new EXRLoader()
 export const loadTexture = (url, onLoad) => {

@@ -42,22 +42,23 @@ const MAX_DELTA_TIME = 1 / 20
 
 /**
  * State of time.
- * @typedef {{ time: number, deltaTime: number, frame: number }} TimeState
+ * @typedef {{ time: number, deltaTime: number, frame: number, camera: PerspectiveCamera }} RenderState
  */
 
 /**
- * @type {TimeState}
+ * @type {RenderState}
  */
-const timeState = {
+const renderState = {
   time: 0,
   deltaTime: 0,
-  frame: 0
+  frame: 0,
+  camera,
 }
 
 const onBeforeRenderStack = new Set()
 /**
  * 
- * @param {(timeState: TimeState) => void} cb 
+ * @param {(timeState: RenderState) => void} cb 
  * @returns 
  */
 export const onBeforeRender = (cb) => {
@@ -72,19 +73,19 @@ const animate = ms => {
   const deltaTime = Math.min((ms - oldMs) / 1e3, MAX_DELTA_TIME)
   oldMs = ms
 
-  timeState.deltaTime = deltaTime
-  timeState.time += deltaTime
-  timeState.frame++
+  renderState.deltaTime = deltaTime
+  renderState.time += deltaTime
+  renderState.frame++
 
   requestAnimationFrame(animate)
 
   // update for everyone
   scene.traverse(child => {
-    child.onBeforeRender?.(timeState)
+    child.onBeforeRender?.(renderState)
   })
 
   for (const cb of onBeforeRenderStack) {
-    cb(timeState)
+    cb(renderState)
   }
 
   renderer.render(scene, camera)
