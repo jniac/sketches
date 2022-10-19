@@ -2,5 +2,7 @@
 
 HTML / CSS / Javascript sketches
 
-[wind & shadow (threejs, foliage)](https://jniac.github.io/sketches/threejs/wind/)
+## ThreeJS sketches (vanilla JS)
+- [wind & shadow (foliage)](https://jniac.github.io/sketches/threejs/wind/)
+- [water & caustics (faking water refraction)](https://jniac.github.io/sketches/threejs/caustics/)
 
