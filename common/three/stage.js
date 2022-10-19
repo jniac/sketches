@@ -77,15 +77,20 @@ const animate = ms => {
   renderState.time += deltaTime
   renderState.frame++
 
-  requestAnimationFrame(animate)
+  try {
+    // update for everyone
+    scene.traverse(child => {
+      child.onBeforeRender?.(renderState)
+    })
+  
+    for (const cb of onBeforeRenderStack) {
+      cb(renderState)
+    }
 
-  // update for everyone
-  scene.traverse(child => {
-    child.onBeforeRender?.(renderState)
-  })
-
-  for (const cb of onBeforeRenderStack) {
-    cb(renderState)
+    requestAnimationFrame(animate)
+  } catch (error) {
+    console.error('An error happened inside the animate loop. Breaking the loop.')
+    console.error(error)
   }
 
   renderer.render(scene, camera)
