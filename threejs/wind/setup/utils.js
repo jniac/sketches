@@ -1,4 +1,4 @@
-import { THREE } from '../three.js'
+import * as THREE from 'three'
 
 const loader = new THREE.TextureLoader()
 export const loadTexture = (url) => {

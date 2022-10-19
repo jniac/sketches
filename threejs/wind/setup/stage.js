@@ -1,4 +1,5 @@
-import { OrbitControls, THREE } from '../three.js'
+import * as THREE from 'three'
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 
 Object.assign(window, { THREE })
 

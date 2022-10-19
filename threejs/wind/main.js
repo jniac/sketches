@@ -1,4 +1,5 @@
-import { mergeBufferGeometries, THREE } from './three.js'
+import * as THREE from 'three'
+import { mergeBufferGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils'
 import { scene, loadTexture, injectBefore, createGrid, createGround } from './setup/index.js'
 import { mnui } from '@jniac/mnui'
 
@@ -15,10 +16,10 @@ const createInstancedFoliage = ({
       .translate(0, 0.5, 0)
       .scale(1.1, 1.1, 1.1)
       .rotateY(Math.PI * .25),
-      new THREE.PlaneGeometry(1, 1, 1, 4)
+    new THREE.PlaneGeometry(1, 1, 1, 4)
       .translate(0, 0.5, 0)
       .rotateY(Math.PI * -.25),
-      new THREE.PlaneGeometry(1, 1, 1, 4)
+    new THREE.PlaneGeometry(1, 1, 1, 4)
       .translate(0, 0.5, 0)
       .scale(1.15, 1.15, 1.15)
       .rotateY(Math.PI * .5),
@@ -131,18 +132,42 @@ const createInstancedFoliage = ({
   return instancedMesh
 }
 
+const createFoliage = ({
+  randomSeed = 45623,
+  count = 20,
+  showWireframe = false,
+} = {}) => {
+  const group = new THREE.Group()
+  scene.add(group)
+
+  const { seededRandom, lerp } = THREE.MathUtils
+  seededRandom(randomSeed)
+  const mesh = createInstancedFoliage({
+    count,
+    parent: group,
+    initMatrix: (position, rotation, scale) => {
+      position.x = lerp(-4, 4, seededRandom())
+      position.z = lerp(-4, 2, seededRandom())
+      rotation.y = Math.PI * 2 * seededRandom()
+      scale.setScalar(lerp(1, 1.2, seededRandom()))
+    },
+  })
+  if (showWireframe) {
+    for (let index = 0; index < count; index++) {
+      const wireframe = new THREE.WireframeGeometry(mesh.geometry)
+      const line = new THREE.LineSegments(wireframe, new THREE.LineBasicMaterial({
+        depthTest: false,
+        transparent: true,
+      }))
+      line.renderOrder = 1000
+      line.matrixAutoUpdate = false
+      mesh.getMatrixAt(index, line.matrix)
+      group.add(line)
+    }
+  }
+}
+
+
 createGrid()
 createGround()
-
-const { seededRandom, lerp } = THREE.MathUtils
-seededRandom(45623)
-createInstancedFoliage({
-  count: 20,
-  initMatrix: (position, rotation, scale) => {
-    position.x = lerp(-4, 4, seededRandom())
-    position.z = lerp(-4, 2, seededRandom())
-    rotation.y = Math.PI * 2 * seededRandom()
-    scale.setScalar(lerp(1, 1.2, seededRandom()))
-  },
-})
-
+createFoliage({ showWireframe: false })
