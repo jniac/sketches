@@ -44,13 +44,23 @@ export const createCausticsMaterial = parameters => {
     shader.vertexShader = shaderTools.injectAfter(
       shader.vertexShader,
       '#include <common>',
-      `varying vec3 cs_vWorldPosition;`,
+      /* glsl */`
+        varying vec3 cs_vWorldPosition;
+        #ifdef CAUSTICS_USE_CAMERA_ORIENTATION
+          varying vec3 cs_vModelPosition;
+        #endif
+      `,
     )
 
     shader.vertexShader = shaderTools.injectAfter(
       shader.vertexShader,
       '#include <worldpos_vertex>',
-      `cs_vWorldPosition = worldPosition.xyz;`,
+      /* glsl */`
+        cs_vWorldPosition = worldPosition.xyz;
+        #ifdef CAUSTICS_USE_CAMERA_ORIENTATION
+          cs_vModelPosition = modelMatrix[3].xyz;
+        #endif
+      `,
     )
 
     shader.fragmentShader = shaderTools.injectAfter(
@@ -66,13 +76,18 @@ export const createCausticsMaterial = parameters => {
         uniform vec4 uCausticsRGBShift;
         uniform sampler2D uCausticsMap;
         uniform mat3 uCausticsCameraOrientation;
+
+        #ifdef CAUSTICS_USE_CAMERA_ORIENTATION
+          varying vec3 cs_vModelPosition; 
+        #endif
+
         vec4 causticsTex(vec2 uv) {
           return texture2D(uCausticsMap, uv);
         }
         vec3 caustics(vec3 normal) {
 
           #ifdef CAUSTICS_USE_CAMERA_ORIENTATION
-            vec2 p = (uCausticsCameraOrientation * cs_vWorldPosition).xy;
+            vec2 p = (uCausticsCameraOrientation * (cs_vWorldPosition - cs_vModelPosition) + cs_vModelPosition).xy;
           #else
             vec2 p = cs_vWorldPosition.xz;
           #endif
