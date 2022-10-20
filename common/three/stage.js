@@ -30,7 +30,7 @@ camera.position.z = 5
 
 document.body.appendChild(renderer.domElement)
 
-export const controls = new OrbitControls(camera, renderer.domElement)
+export const orbitcontrols = new OrbitControls(camera, renderer.domElement)
 
 const resize = () => {
   camera.aspect = window.innerWidth / window.innerHeight
