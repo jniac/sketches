@@ -32,7 +32,7 @@ export const createCausticsMaterial = (parameters = {}) => {
 
   const transform = {
     position: new THREE.Vector3(),
-    velocity: new THREE.Vector3(.2, 0, 0),
+    velocity: new THREE.Vector3(.5, 0, 0),
     scale: new THREE.Vector3(1, 1, 1),
     rotation: new THREE.Euler(0, Math.PI / 4, 0),
     quaternion: new THREE.Quaternion(),
@@ -64,6 +64,7 @@ export const createCausticsMaterial = (parameters = {}) => {
     shader.uniforms.uCausticsTransform = { value: new THREE.Matrix4() }
     shader.uniforms.uCausticsTransformInverse = { value: new THREE.Matrix4() }
     shader.uniforms.uCausticsNormalAttenuation = { value: new THREE.Vector2(.75, -.5) }
+    shader.uniforms.uCausticsShadowAttenuation = { value: .666 }
     shader.uniforms.uCausticsColorShift = { value: new THREE.Vector4(1, 1, 1, 1.4) }
     shader.uniforms.uCausticsMap = { value: causticsMap }
     shader.uniforms.uCausticsCameraOrientation = { value: new THREE.Matrix3() }
@@ -98,6 +99,7 @@ export const createCausticsMaterial = (parameters = {}) => {
         uniform float uTime;
         uniform vec4 uCausticsParams; // "x" is timeScale, "y" is intensity
         uniform vec2 uCausticsNormalAttenuation; // "x" is attenuation, "y" is "lower" bound
+        uniform float uCausticsShadowAttenuation;
         uniform vec3 uCausticsColor;
         uniform vec3 uCausticsScale;
         uniform vec3 uCausticsDirection;
@@ -115,11 +117,8 @@ export const createCausticsMaterial = (parameters = {}) => {
         vec4 causticsTex(vec2 uv) {
           return texture2D(uCausticsMap, uv);
         }
-        float clamp01(float x) {
-          return x < 0.0 ? 0.0 : x > 1.0 ? 1.0 : x;
-        }
         float inverseLerp(float a, float b, float t) {
-          return clamp01((t - a) / (b - a));
+          return saturate((t - a) / (b - a));
         }
         vec3 caustics(vec3 normal) {
           float timeScale = uCausticsParams.x;
@@ -132,10 +131,10 @@ export const createCausticsMaterial = (parameters = {}) => {
           #endif
           
           vec3 scale = uCausticsScale;
-          p *= 0.3 * scale.z;
-          float time = uTime * timeScale;
-          vec2 uv1 = (p + time * 0.010) * scale.x;
-          vec2 uv2 = (p - time * 0.005) * scale.y;
+          p *= 0.3 / scale.z;
+          float time = uTime * timeScale * 0.04;
+          vec2 uv1 = (p + time) / scale.x;
+          vec2 uv2 = (p - time) / scale.y;
           float s = 0.002;
           vec4 shift = uCausticsColorShift;
           vec2 shiftR = shift.w * shift.x * vec2(-s, s);
@@ -183,11 +182,25 @@ export const createCausticsMaterial = (parameters = {}) => {
         }
       `
     )
-    shader.fragmentShader = shaderTools.injectAfterChunk(
+    shader.fragmentShader = shaderTools.injectAfterChunk(shader.fragmentShader, 'common', /* glsl */`
+      vec3 cs_lightBefore, cs_lightAfter;
+    `)
+    // shader.fragmentShader = shaderTools.injectAfterChunk(shader.fragmentShader, 'lights_fragment_begin', /* glsl */`
+    //   cs_lightBefore = directLight.color;
+    // `)
+    shader.fragmentShader = shaderTools.injectAfterChunk(shader.fragmentShader, 'lights_fragment_begin', /* glsl */`
+      cs_lightBefore = material.diffuseColor;
+    `)
+    shader.fragmentShader = shaderTools.injectAfterChunk(shader.fragmentShader, 'lights_fragment_end', /* glsl */`
+      cs_lightAfter = directLight.color;
+    `)
+    shader.fragmentShader = shaderTools.injectBeforeChunk(
       shader.fragmentShader,
-      'normal_fragment_maps',
+      'output_fragment',
       /* glsl */ `
-        diffuseColor.rgb += caustics(normal);
+        float shadow = saturate(dot(cs_lightBefore - cs_lightAfter, vec3(.5)) * .5);
+        // outgoingLight.rgb = vec3(shadow);
+        outgoingLight.rgb += saturate(caustics(normal)) * mix(1.0, saturate(1.0 - shadow * 8.0), uCausticsShadowAttenuation);
       `
     )
 
@@ -199,6 +212,7 @@ export const createCausticsMaterial = (parameters = {}) => {
           uCausticsParams,
           uCausticsColorShift,
           uCausticsNormalAttenuation,
+          uCausticsShadowAttenuation,
           uCausticsCameraOrientation,
           uCausticsTransform,
           uCausticsTransformInverse,
@@ -227,8 +241,13 @@ export const createCausticsMaterial = (parameters = {}) => {
           uCausticsParams.value.y = mnui.range('params.intensity', uCausticsParams.value.y, [0, 4]).value
           uCausticsColorShift.value.copy(mnui.vector('color-shift', uCausticsColorShift.value).value)
           uCausticsColorShift.value.w = mnui.range('color-shift.w', uCausticsColorShift.value.w, [0, 10]).value
-          uCausticsNormalAttenuation.value.x = mnui.range('normal/attenuation', uCausticsNormalAttenuation.value.x, [0, 1]).value
-          uCausticsNormalAttenuation.value.y = mnui.range('normal/lower-bound', uCausticsNormalAttenuation.value.y, [-1, 0]).value
+          uCausticsNormalAttenuation.value.x = mnui.range('normal-attenuation/attenuation', uCausticsNormalAttenuation.value.x, [0, 1]).value
+          uCausticsNormalAttenuation.value.y = mnui.range('normal-attenuation/lower-bound', uCausticsNormalAttenuation.value.y, [-1, 0]).value
+          uCausticsShadowAttenuation.value = mnui.range('shadow-attenuation', uCausticsShadowAttenuation.value, [0, 1]).value
+        })
+
+        mnui.group('caustics/transform', () => {
+          mnui.vector('position', transform.position)
         })
       }
     })
@@ -248,7 +267,7 @@ export const createCausticsMaterial = (parameters = {}) => {
     })
 
     mnui.group('caustics/transform', () => {
-      mnui.vector('position', transform.position)
+      mnui.vector('position', transform.position, { step: .1 }).onUserChange(value => transform.position.copy(value))
       mnui.vector('velocity', transform.velocity, { step: .1 }).onUserChange(value => transform.velocity.copy(value))
       mnui.vector('rotation', transform.rotation, {
         keys: 'x,y,z',
@@ -262,7 +281,6 @@ export const createCausticsMaterial = (parameters = {}) => {
 
     Object.assign(window, { material, shader })
   }
-
 
   return material
 }
@@ -406,3 +424,5 @@ createPlasterObjects()
 createGolfBall()
 createCarbonBall()
 createPaintBall()
+
+Object.assign(window, { mnui })
