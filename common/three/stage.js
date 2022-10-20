@@ -87,7 +87,7 @@ const animate = ms => {
   try {
     // update for everyone
     scene.traverse(child => {
-      child.onBeforeRender?.(renderState)
+      child.onUpdate?.(renderState)
     })
   
     for (const cb of onBeforeRenderStack) {

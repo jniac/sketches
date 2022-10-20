@@ -1,14 +1,30 @@
 import * as THREE from 'three'
-import { onBeforeRender, scene, renderer, camera, orbitcontrols } from '../../common/three/stage.js'
+import { onBeforeRender, scene, camera, orbitcontrols } from '../../common/three/stage.js'
 import { loadHdrCubeTexture, loadTexture, shaderTools } from '../../common/three/utils.js'
 import { mnui } from '@jniac/mnui'
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js'
-import { Water } from 'three/addons/objects/Water.js'
+import { Water } from 'three/addons/objects/Water2.js'
 
-export const createGrid = () => {
-  const gridHelper = new THREE.GridHelper(10, 10)
-  scene.add(gridHelper)
+const waterTransform = {
+  position: new THREE.Vector3(),
+  velocity: new THREE.Vector3(.5, 0, 0),
+  scale: new THREE.Vector3(1, 1, 1, 'XZY'),
+  rotation: new THREE.Euler(0, 0, 0),
+  quaternion: new THREE.Quaternion(),
 }
+
+mnui.group('caustics/transform', () => {
+  mnui.vector('position', waterTransform.position, { step: .1 }).onUserChange(value => waterTransform.position.copy(value))
+  mnui.vector('velocity', waterTransform.velocity, { step: .1 }).onUserChange(value => waterTransform.velocity.copy(value))
+  mnui.vector('rotation', waterTransform.rotation, {
+    keys: 'x,y,z',
+    step: .05,
+    map: [
+      x => x * 180 / Math.PI,
+      x => x * Math.PI / 180,
+    ],
+  }).onUserChange(value => waterTransform.rotation.copy(value))
+})
 
 /**
  * @typedef {{ causticsPower: number, causticsUseCameraOrientation: boolean }} CausticsProps
@@ -26,14 +42,6 @@ export const createCausticsMaterial = (parameters = {}) => {
     ...superParameters
   } = parameters
   const material = new THREE.MeshPhysicalMaterial(superParameters)
-
-  const transform = {
-    position: new THREE.Vector3(),
-    velocity: new THREE.Vector3(.5, 0, 0),
-    scale: new THREE.Vector3(1, 1, 1),
-    rotation: new THREE.Euler(0, Math.PI / 4, 0),
-    quaternion: new THREE.Quaternion(),
-  }
 
   let shader = null
   material.onBeforeCompile = _shader => {
@@ -57,6 +65,7 @@ export const createCausticsMaterial = (parameters = {}) => {
     shader.uniforms.uCausticsParams = { value: new THREE.Vector4(1, 1, 1, 1) }
     shader.uniforms.uCausticsColor = { value: new THREE.Color('#fff') }
     shader.uniforms.uCausticsScale = { value: new THREE.Vector3(1.15, 0.95, 1) }
+    shader.uniforms.uCausticsWaterLevel = { value: new THREE.Vector2(.5, .5) }
     shader.uniforms.uCausticsDirection = { value: new THREE.Vector3(0, 1, 0) }
     shader.uniforms.uCausticsTransform = { value: new THREE.Matrix4() }
     shader.uniforms.uCausticsTransformInverse = { value: new THREE.Matrix4() }
@@ -97,6 +106,7 @@ export const createCausticsMaterial = (parameters = {}) => {
         uniform vec4 uCausticsParams; // "x" is timeScale, "y" is intensity
         uniform vec2 uCausticsNormalAttenuation; // "x" is attenuation, "y" is "lower" bound
         uniform float uCausticsShadowAttenuation;
+        uniform vec2 uCausticsWaterLevel; // "x" is height, "y" is fade distance;
         uniform vec3 uCausticsColor;
         uniform vec3 uCausticsScale;
         uniform vec3 uCausticsDirection;
@@ -117,21 +127,28 @@ export const createCausticsMaterial = (parameters = {}) => {
         float inverseLerp(float a, float b, float t) {
           return saturate((t - a) / (b - a));
         }
+        float easeInout2(float x) {
+          return saturate(x < 0.5 ? 2.0 * x * x : 1.0 - 2.0 * (x = 1.0 - x) * x);
+        }
         vec3 caustics(vec3 normal) {
           float timeScale = uCausticsParams.x;
           float intensity = uCausticsParams.y;
           #ifdef CAUSTICS_USE_CAMERA_ORIENTATION
             vec3 transformedPosition = (uCausticsTransform * vec4(uCausticsCameraOrientation * (cs_vWorldPosition - cs_vModelPosition), 1.0)).xyz + cs_vModelPosition;
-            vec2 p = (transformedPosition).xy;
+            vec2 uv = transformedPosition.xy;
           #else
-            vec2 p = (uCausticsTransform * vec4(cs_vWorldPosition, 1.0)).xz;
+            vec3 transformedPosition = (uCausticsTransform * vec4(cs_vWorldPosition, 1.0)).xyz;
+            if (transformedPosition.y > uCausticsWaterLevel.x) {
+              return vec3(0.0);
+            }
+            vec2 uv = transformedPosition.xz;
           #endif
           
           vec3 scale = uCausticsScale;
-          p *= 0.3 / scale.z;
+          uv *= 0.3 / scale.z;
           float time = uTime * timeScale * 0.04;
-          vec2 uv1 = (p + time) / scale.x;
-          vec2 uv2 = (p - time) / scale.y;
+          vec2 uv1 = (uv + time) / scale.x;
+          vec2 uv2 = (uv - time) / scale.y;
           float s = 0.002;
           vec4 shift = uCausticsColorShift;
           vec2 shiftR = shift.w * shift.x * vec2(-s, s);
@@ -174,6 +191,9 @@ export const createCausticsMaterial = (parameters = {}) => {
               light *= light * 9.0;
             #endif
           #endif
+
+          float distanceAttenuation = saturate((uCausticsWaterLevel.x - transformedPosition.y) / uCausticsWaterLevel.y);
+          light *= easeInout2(distanceAttenuation);
 
           return light;
         }
@@ -224,10 +244,10 @@ export const createCausticsMaterial = (parameters = {}) => {
           me[8], me[9], me[10])
 
         {
-          transform.position.addScaledVector(transform.velocity, deltaTime)
-          transform.quaternion.setFromEuler(transform.rotation)
+          waterTransform.position.addScaledVector(waterTransform.velocity, deltaTime)
+          waterTransform.quaternion.setFromEuler(waterTransform.rotation)
           // uCausticsTransform.value.makeRotationFromEuler(new THREE.Euler(uTime.value * .1, 0, 0))
-          uCausticsTransform.value.compose(transform.position, transform.quaternion, transform.scale)
+          uCausticsTransform.value.compose(waterTransform.position, waterTransform.quaternion, waterTransform.scale)
           uCausticsTransformInverse.value.copy(uCausticsTransform.value).invert()
         }
 
@@ -244,13 +264,13 @@ export const createCausticsMaterial = (parameters = {}) => {
         })
 
         mnui.group('caustics/transform', () => {
-          mnui.vector('position', transform.position)
+          mnui.vector('position', waterTransform.position)
         })
       }
     })
 
     mnui.group('caustics/uniforms', () => {
-      mnui.range('CAUSTICS_POWER', causticsPower, { min: 1, max: 6, step: 1 }).onUserChange(value => {
+      mnui.range('POWER', causticsPower, { min: 1, max: 6, step: 1 }).onUserChange(value => {
         causticsPower = value
         shader.defines.update = Math.random()
         material.needsUpdate = true
@@ -261,19 +281,6 @@ export const createCausticsMaterial = (parameters = {}) => {
         shader.defines.update = Math.random()
         material.needsUpdate = true
       })
-    })
-
-    mnui.group('caustics/transform', () => {
-      mnui.vector('position', transform.position, { step: .1 }).onUserChange(value => transform.position.copy(value))
-      mnui.vector('velocity', transform.velocity, { step: .1 }).onUserChange(value => transform.velocity.copy(value))
-      mnui.vector('rotation', transform.rotation, {
-        keys: 'x,y,z',
-        step: .05,
-        map: [
-          x => x * 180 / Math.PI,
-          x => x * Math.PI / 180,
-        ],
-      }).onUserChange(value => transform.rotation.copy(value))
     })
 
     Object.assign(window, { material, shader })
@@ -312,6 +319,31 @@ const createPlasterObjects = () => {
   }
 
   {
+    // capsusle
+    const geometry = new THREE.CapsuleGeometry(.5, 1, 5, 16).rotateY(Math.PI)
+    const mesh = new THREE.Mesh(geometry, material)
+    mesh.position.set(2.5, -.5, 1)
+    mesh.rotation.set(0, -.7, Math.PI / 2)
+    mesh.castShadow = true
+    mesh.receiveShadow = true
+    scene.add(mesh)
+  }
+
+  {
+    // big capsusle
+    const geometry = new THREE.CapsuleGeometry(1, 2, 5, 16).rotateY(Math.PI)
+    const mesh = new THREE.Mesh(geometry, material)
+    mesh.position.set(1.25, 0, -1.75)
+    mesh.rotation.set(0, 0, -1, [...waterTransform.rotation.order].reverse().join(''))
+    mesh.castShadow = true
+    mesh.receiveShadow = true
+    scene.add(mesh)
+    onBeforeRender(geometry, ({ deltaTime }) => {
+      mesh.rotation.y += deltaTime * .3
+    })
+  }
+
+  {
     // cube
     const geometry = new RoundedBoxGeometry()
     const mesh = new THREE.Mesh(geometry, material)
@@ -334,6 +366,37 @@ const createPlasterObjects = () => {
     mesh.receiveShadow = true
     scene.add(mesh)
   }
+}
+
+const createWater = () =>   {
+  const group = new THREE.Group()
+  scene.add(group)
+  const gridHelper = new THREE.GridHelper(8, 8, '#fff', '#fff')
+  gridHelper.position.set(0, .5, 0)
+  group.add(gridHelper)
+  // water
+  const geometry = new THREE.PlaneGeometry(8, 8, 20, 20).rotateX(-Math.PI / 2)
+  const water = new Water(geometry, {
+    color: new THREE.Color('#fff'),
+    scale: .15,
+    normalMap0: loadTexture('https://threejs.org/examples/textures/water/Water_1_M_Normal.jpg'),
+    normalMap1: loadTexture('https://threejs.org/examples/textures/water/Water_2_M_Normal.jpg'),
+    flowDirection: new THREE.Vector2(1, 1),
+    textureWidth: 1024,
+    textureHeight: 1024,
+    clipBias: 1.5,
+  })
+  water.position.set(0, .55, 0)
+  group.add(water)
+  let waterVisibility = water.visible 
+  mnui.toggle('scene/water.visible', waterVisibility).onUserChange(value => {
+    waterVisibility = value
+  })
+  onBeforeRender(water, () => {
+    water.visible = waterVisibility
+    const waterRotation = mnui.vector('caustics/transform/rotation', waterTransform.rotation).value
+    group.rotation.set(-waterRotation.x, -waterRotation.y, -waterRotation.z, 'ZYX')
+  })
 }
 
 const createPaintBall = () => {
@@ -374,6 +437,9 @@ const createGolfBall = () => {
   mesh.position.set(-1.25, 0, -1.25)
   mesh.castShadow = true
   mesh.receiveShadow = true
+  mesh.onUpdate = ({ deltaTime }) => {
+    mesh.rotation.y += deltaTime
+  }
   scene.add(mesh)
 }
 
@@ -409,17 +475,19 @@ scene.background = new THREE.Color('#95accb')
 scene.environment = loadHdrCubeTexture(
   'https://threejs.org/examples/textures/cube/pisaHDR/'
 )
-renderer.toneMapping = THREE.ACESFilmicToneMapping
-renderer.toneMappingExposure = 0.95
+// renderer.toneMapping = THREE.ACESFilmicToneMapping
+// renderer.toneMappingExposure = 0.95
 // renderer.outputEncoding = THREE.sRGBEncoding
 
-camera.position.set(-3, 2, 4)
+
+camera.position.set(-3, 3, 4).multiplyScalar(1.2)
+orbitcontrols.target.set(0, -1, 0)
 orbitcontrols.update()
 
-createGrid()
+createWater()
 createPlasterObjects()
 createGolfBall()
 createCarbonBall()
 createPaintBall()
 
-Object.assign(window, { mnui })
+Object.assign(window, { mnui, orbitcontrols })
