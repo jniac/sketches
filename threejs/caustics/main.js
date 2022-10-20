@@ -7,7 +7,7 @@ import { Water } from 'three/addons/objects/Water2.js'
 
 const waterTransform = {
   position: new THREE.Vector3(),
-  velocity: new THREE.Vector3(.5, 0, 0),
+  velocity: new THREE.Vector3(.15, 0, 0),
   scale: new THREE.Vector3(1, 1, 1, 'XZY'),
   rotation: new THREE.Euler(0, 0, 0),
   quaternion: new THREE.Quaternion(),
