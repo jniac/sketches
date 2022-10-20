@@ -1,5 +1,5 @@
 import { Group, AmbientLight, DirectionalLight, Scene, PerspectiveCamera, WebGLRenderer, Color } from 'three'
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 
 export const getDefaultLight = () => {
   const group = new Group()

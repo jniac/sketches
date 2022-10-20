@@ -1,6 +1,6 @@
 import * as THREE from 'three'
-import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader'
-import { HDRCubeTextureLoader } from 'three/examples/jsm/loaders/HDRCubeTextureLoader'
+import { EXRLoader } from 'three/addons/loaders/EXRLoader.js'
+import { HDRCubeTextureLoader } from 'three/addons/loaders/HDRCubeTextureLoader.js'
 
 Object.assign(window, { THREE })
 

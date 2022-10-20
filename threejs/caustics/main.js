@@ -1,12 +1,9 @@
 import * as THREE from 'three'
 import { onBeforeRender, scene, renderer, camera, orbitcontrols } from '../../common/three/stage.js'
-import {
-  loadHdrCubeTexture,
-  loadTexture,
-  shaderTools,
-} from '../../common/three/utils.js'
+import { loadHdrCubeTexture, loadTexture, shaderTools } from '../../common/three/utils.js'
 import { mnui } from '@jniac/mnui'
-import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry'
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js'
+import { Water } from 'three/addons/objects/Water.js'
 
 export const createGrid = () => {
   const gridHelper = new THREE.GridHelper(10, 10)

@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import { mergeBufferGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils'
+import { mergeBufferGeometries } from 'three/addons/utils/BufferGeometryUtils.js'
 import { scene, loadTexture, injectBefore, createGrid, createGround } from './setup/index.js'
 import { mnui } from '@jniac/mnui'
 
