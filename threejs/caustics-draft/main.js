@@ -9,10 +9,11 @@ const waterTransform = {
   position: new THREE.Vector3(),
   velocity: new THREE.Vector3(.15, 0, 0),
   scale: new THREE.Vector3(1, 1, 1, 'XZY'),
-  rotation: new THREE.Euler(0, 0, 0),
+  rotation: new THREE.Euler(-18 * THREE.MathUtils.DEG2RAD, 0, 13 * THREE.MathUtils.DEG2RAD),
   quaternion: new THREE.Quaternion(),
 }
 
+mnui.group('scene')
 mnui.group('caustics/transform', () => {
   mnui.vector('position', waterTransform.position, { step: .1 }).onUserChange(value => waterTransform.position.copy(value))
   mnui.vector('velocity', waterTransform.velocity, { step: .1 }).onUserChange(value => waterTransform.velocity.copy(value))
@@ -388,7 +389,7 @@ const createWater = () =>   {
   })
   water.position.set(0, .55, 0)
   group.add(water)
-  let waterVisibility = water.visible 
+  let waterVisibility = water.visible
   mnui.toggle('scene/water.visible', waterVisibility).onUserChange(value => {
     waterVisibility = value
   })
