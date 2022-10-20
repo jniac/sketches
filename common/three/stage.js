@@ -56,16 +56,23 @@ const renderState = {
 }
 
 const onBeforeRenderStack = new Set()
+const onBeforeRenderDestroyMap = new WeakMap()
 /**
- * 
- * @param {(timeState: RenderState) => void} cb 
- * @returns 
+ * @type {{
+ *   (cb: (timeState: RenderState) => void) => void
+ *   (cb: (target: any, timeState: RenderState) => void) => void
+ * }}
  */
-export const onBeforeRender = (cb) => {
+export const onBeforeRender = (...args) => {
+  const [target, cb] = args.length === 2 ? args : [null, ...args]
   onBeforeRenderStack.add(cb)
   const destroy = () => onBeforeRenderStack.delete(cb)
+  if (target !== null) {
+    onBeforeRenderDestroyMap.get(target)?.()
+    onBeforeRenderDestroyMap.set(target, destroy)
+  }
   return { destroy }
-} 
+}
 
 let oldMs = -1
 const animate = ms => {

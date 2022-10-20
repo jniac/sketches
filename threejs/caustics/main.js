@@ -191,7 +191,7 @@ export const createCausticsMaterial = (parameters = {}) => {
       `
     )
 
-    onBeforeRender(({ camera, deltaTime }) => {
+    onBeforeRender(material, ({ camera, deltaTime }) => {
       if (shader) {
         const {
           uTime,
