@@ -21,9 +21,24 @@
     </script>
   </head>
   <body>
-    <script src="main.js" type="module"></script>
     <div class="overlay info bottom right padding-8" style="--margin: 8px">
       <a href="https://github.com/jniac/sketches/tree/main/threejs/caustics-draft">Github</a>
     </div>
+    <!-- <script src="main.js" type="module"></script> -->
+    <script type="module">
+      import { mnui } from '@jniac/mnui'
+      mnui.setCustomStyle(`
+        #mnui {
+          z-index: 1;
+        }
+      `)
+      const isV1 = window.location.hash === '#v1'
+      mnui.flipflop('scene/v2:v1', isV1).onUserChange(() => {
+        window.location.hash = isV1 ? '#v2' : '#v1'
+        window.location.reload()
+      })
+      const main = window.location.hash === '#v1' ? './main-1.js' : './main-2.js'
+      await import(main)
+    </script>
   </body>
 </html>

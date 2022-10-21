@@ -33,12 +33,12 @@ mnui.group('caustics/transform', () => {
  * @returns
  */
 export const createCausticsMaterial = (parameters = {}) => {
-  const causticsMap = loadTexture('assets/caustics-2.png')
+  const causticsMap = loadTexture('../../common/assets/caustics-3.png')
   causticsMap.wrapS = THREE.RepeatWrapping
   causticsMap.wrapT = THREE.RepeatWrapping
 
   let {
-    causticsPower = 2,
+    causticsPower = 3,
     causticsUseCameraOrientation = false,
     ...superParameters
   } = parameters
@@ -63,16 +63,16 @@ export const createCausticsMaterial = (parameters = {}) => {
 
     // #2. uniforms
     shader.uniforms.uTime = { value: 0 }
-    shader.uniforms.uCausticsParams = { value: new THREE.Vector4(1, 1, 1, 1) }
+    shader.uniforms.uCausticsParams = { value: new THREE.Vector4(1, .3, 1, 1) }
     shader.uniforms.uCausticsColor = { value: new THREE.Color('#fff') }
-    shader.uniforms.uCausticsScale = { value: new THREE.Vector3(1.15, 0.95, 1) }
+    shader.uniforms.uCausticsScale = { value: new THREE.Vector3(1.15, .95, .8) }
     shader.uniforms.uCausticsWaterLevel = { value: new THREE.Vector2(.5, .5) }
     shader.uniforms.uCausticsDirection = { value: new THREE.Vector3(0, 1, 0) }
     shader.uniforms.uCausticsTransform = { value: new THREE.Matrix4() }
     shader.uniforms.uCausticsTransformInverse = { value: new THREE.Matrix4() }
     shader.uniforms.uCausticsNormalAttenuation = { value: new THREE.Vector2(.75, -.5) }
     shader.uniforms.uCausticsShadowAttenuation = { value: .666 }
-    shader.uniforms.uCausticsColorShift = { value: new THREE.Vector4(1, 1, 1, 1.4) }
+    shader.uniforms.uCausticsColorShift = { value: new THREE.Vector4(2, 1, 1, 1.4) }
     shader.uniforms.uCausticsMap = { value: causticsMap }
     shader.uniforms.uCausticsCameraOrientation = { value: new THREE.Matrix3() }
 
@@ -253,11 +253,11 @@ export const createCausticsMaterial = (parameters = {}) => {
         }
 
         mnui.group('caustics/uniforms', () => {
-          uCausticsScale.value.copy(mnui.vector('scale', uCausticsScale.value).value)
+          uCausticsScale.value.copy(mnui.vector('scale', uCausticsScale.value, { step: .01 }).value)
           uCausticsScale.value.z = mnui.range('scale.z', uCausticsScale.value.z, [0, 4]).value
           uCausticsParams.value.x = mnui.range('params.timeScale', uCausticsParams.value.x, [0, 4]).value
           uCausticsParams.value.y = mnui.range('params.intensity', uCausticsParams.value.y, [0, 4]).value
-          uCausticsColorShift.value.copy(mnui.vector('color-shift', uCausticsColorShift.value).value)
+          uCausticsColorShift.value.copy(mnui.vector('color-shift', uCausticsColorShift.value, { step: .01 }).value)
           uCausticsColorShift.value.w = mnui.range('color-shift.w', uCausticsColorShift.value.w, [0, 10]).value
           uCausticsNormalAttenuation.value.x = mnui.range('normal-attenuation/attenuation', uCausticsNormalAttenuation.value.x, [0, 1]).value
           uCausticsNormalAttenuation.value.y = mnui.range('normal-attenuation/lower-bound', uCausticsNormalAttenuation.value.y, [-1, 0]).value
@@ -293,11 +293,11 @@ export const createCausticsMaterial = (parameters = {}) => {
 const createPlasterObjects = () => {
   const material = createCausticsMaterial({
     color: '#9fc7ff',
-    map: loadTexture('assets/white_plaster/diff.jpg'),
-    normalMap: loadTexture('assets/white_plaster/normal.exr'),
+    map: loadTexture('../../common/assets/white_plaster/diff.jpg'),
+    normalMap: loadTexture('../../common/assets/white_plaster/normal.exr'),
     roughness: 0.33,
-    bumpMap: loadTexture('assets/white_plaster/bump.exr'),
-    aoMap: loadTexture('assets/white_plaster/ao.jpg'),
+    bumpMap: loadTexture('../../common/assets/white_plaster/bump.exr'),
+    aoMap: loadTexture('../../common/assets/white_plaster/ao.jpg'),
   })
 
   {
@@ -413,7 +413,7 @@ const createPaintBall = () => {
     clearcoatNormalScale: new THREE.Vector2(2.0, -2.0),
   })
   const mesh = new THREE.Mesh(geometry, material)
-  mesh.position.set(-1.25, 0, 0)
+  mesh.position.set(-1.25, -.25, 0)
   mesh.castShadow = true
   mesh.receiveShadow = true
   scene.add(mesh)
@@ -435,7 +435,7 @@ const createGolfBall = () => {
     clearcoatNormalScale: new THREE.Vector2(2.0, -2.0),
   })
   const mesh = new THREE.Mesh(geometry, material)
-  mesh.position.set(-1.25, 0, -1.25)
+  mesh.position.set(-1.25, -.25, -1.25)
   mesh.castShadow = true
   mesh.receiveShadow = true
   mesh.onUpdate = ({ deltaTime }) => {
@@ -465,7 +465,7 @@ const createCarbonBall = () => {
     normalMap: normal,
   })
   const mesh = new THREE.Mesh(geometry, material)
-  mesh.position.set(-1.25, 0, 1.25)
+  mesh.position.set(-1.25, -.25, 1.25)
   mesh.castShadow = true
   mesh.receiveShadow = true
   scene.add(mesh)
